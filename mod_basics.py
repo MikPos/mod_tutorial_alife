@@ -293,6 +293,44 @@ if True:
 
 
 
+if False:
+   aldolAdd_F = ruleGMLString(aldolAddGML)
+   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = ruleGMLString(ketoEnolGML)
+   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+
+   #First we define our input molecules
+   formaldehyde = smiles("C=O", name="Formaldehyde")
+
+   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+
+   input_molecules = [formaldehyde, glycolaldehyde]
+
+   #We might want to constrain some property of the molecules we consume.
+   #Here we only allow reactions where the reactants together have at most 4 oxygen atoms
+
+   dg = DG(graphDatabase=input_molecules)
+   reaction_network = dg.build()
+
+   strategy = (
+
+      addSubset(input_molecules)
+      
+      >> leftPredicate[lambda derivation: sum([g.vLabelCount("O") for g in derivation.left])<=4](
+         repeat[10](inputRules)
+      )
+
+   )
+
+   reaction_network.execute(strategy)
+
+   del reaction_network
+
+   dg.print()
+
+
+
+
 
 import random
 if True:
