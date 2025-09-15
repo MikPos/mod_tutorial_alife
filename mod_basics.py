@@ -291,3 +291,59 @@ if True:
    dg.print()
 
 
+
+
+
+import random
+if True:
+   
+   ketoEnol_F = ruleGMLString(ketoEnolGML)
+   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = ruleGMLString(aldolAddGML)
+   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+   
+   rules = [aldolAdd_B, aldolAdd_F, ketoEnol_F, ketoEnol_B]
+   
+
+
+   formaldehyde = smiles("C=O", name="Formaldehyde")
+
+   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+
+
+   dg = DG(graphDatabase=[formaldehyde, glycolaldehyde])
+
+   reaction_network = dg.build()
+
+
+   molecules = [formaldehyde, glycolaldehyde]
+
+
+   i = 0
+   
+   num_iterations = 10
+
+   while i<num_iterations:
+
+         i += 1
+
+         molecule1 = random.sample(molecules, 1)[0]
+         molecule2 = random.sample(molecules, 1)[0]
+
+         reactants = [molecule1, molecule2]
+
+
+         for rule in rules:
+
+            reaction_edges = reaction_network.apply(reactants, rule, onlyProper=False)
+
+            for edge in reaction_edges:
+               for molecule in edge.targets:
+                  molecules.append(molecule.graph)
+
+
+
+   del reaction_network
+
+   dg.print()
+
