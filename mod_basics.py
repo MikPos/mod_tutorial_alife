@@ -1,18 +1,18 @@
 
 if False:
    #creating a molecule from a SMILES string
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
    glycolaldehyde.print()
 
 if False:
    #Creating a molecule from graphDFS
-   glycolaldehyde = graphDFS("[O]([C]([C](=[O])[H])([H])[H])[H]", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromDFS("[O]([C]([C](=[O])[H])([H])[H])[H]", name="Glycolaldehyde")
    glycolaldehyde.print()
 
 if False:
    #Creating a molecule of your choice from a SMILES string
    my_own_smiles_string = "CCC=CO"#Change this string to a SMILES string representing a molecule of your choice
-   my_molecule = smiles(my_own_smiles_string, name="My own molecule")
+   my_molecule = Graph.fromSMILES(my_own_smiles_string, name="My own molecule")
    my_molecule.print()
 
 
@@ -111,7 +111,7 @@ aldolAddGML = """rule [
 
 if False:
    #Load the rule for keto-enol isomerization (rules can also be loaded from a gml file)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
 
    #We can also print rules, similar to how we print molecules
    ketoEnol_F.print()
@@ -119,16 +119,16 @@ if False:
 
 if False:
    #We can define a rule that is the inverse of a given rule
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
    ketoEnol_B.print()
 
 
 if False:
    #Here we load all of the four rules we use for formose chemistry and put all four rules in a list
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    formose_rules = [ketoEnol_F, ketoEnol_B, aldolAdd_F, aldolAdd_B]
 
@@ -143,15 +143,15 @@ if False:
    #Formally we call it a reaction networ or a derivation graph, DG for short.
 
    #We first load the rules
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    #First we define our input molecules
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
    input_molecules = [formaldehyde, glycolaldehyde]
 
@@ -174,15 +174,15 @@ if False:
 if False:
    #Instead of using the apply function, we can also a strategy framework that applys the rules for us.
    #Now we define a new DG, with the same input molecules as before.
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    #First we define our input molecules
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
    input_molecules = [formaldehyde, glycolaldehyde]
 
@@ -210,15 +210,15 @@ if False:
 
 
 if False:
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    #First we define our input molecules
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
    input_molecules = [formaldehyde, glycolaldehyde]
 
@@ -247,15 +247,15 @@ if False:
 
 
 if True:
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    #First we define our input molecules
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES( "OCC=O", name="Glycolaldehyde")
 
    input_molecules = [formaldehyde, glycolaldehyde]
 
@@ -294,15 +294,15 @@ if True:
 
 
 if False:
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    #First we define our input molecules
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
    input_molecules = [formaldehyde, glycolaldehyde]
 
@@ -335,18 +335,18 @@ if False:
 import random
 if True:
    
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
    
    rules = [aldolAdd_B, aldolAdd_F, ketoEnol_F, ketoEnol_B]
    
 
 
-   formaldehyde = smiles("C=O", name="Formaldehyde")
+   formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
 
    dg = DG(graphDatabase=[formaldehyde, glycolaldehyde])
@@ -361,7 +361,7 @@ if True:
    
    num_iterations = 10
 
-   while i<num_iterations:
+   while i < num_iterations:
 
          i += 1
 
