@@ -1,6 +1,6 @@
-formaldehyde = smiles("C=O", name="Formaldehyde")
+formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
 
-glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+glycolaldehyde = Graph.fromSMILES("OCC=O", name="Glycolaldehyde")
 
 ketoEnolGML = """rule [
 
@@ -40,9 +40,9 @@ ketoEnolGML = """rule [
 
 ]"""
 
-ketoEnol_F = ruleGMLString(ketoEnolGML)
+ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
 
-ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
 aldolAddGML = """rule [
 
@@ -93,6 +93,6 @@ aldolAddGML = """rule [
 
 ]"""
 
-aldolAdd_F = ruleGMLString(aldolAddGML)
+aldolAdd_F = Rule.fromGMLString(aldolAddGML)
 
-aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
