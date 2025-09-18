@@ -3,11 +3,10 @@ import mod.stochsim as stoch
 
 # Include all necessary rules
 # Recommend listing rules using full names to make debugging easier
-KetoEnol_F = ruleGML()
-KetoEnol_B = ruleGML()
-KetoEnol_F = ruleGML()
-KetoEnol_B = ruleGML()
-
+aldolAdd_F = ruleGMLString(aldolAddGML)
+aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+ketoEnol_F = ruleGMLString(ketoEnolGML)
+ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
 
 # Include all necessary molecules
 Molecules = include()
@@ -16,9 +15,10 @@ Molecules = include()
 Reactants = [Formose, Glycolaldehyde]
 
 # List kinetic parameters as variables for each rule, these can be changed to your liking to edit the behaviour of the system.
-k_r0 = 1.0  # Placeholder
-k_r1 = 0.5  # Placeholder
-km_r1 = 0.2 # Placeholder
+k_aldol_F
+k_aldol_B
+k_keto_F
+k_keto_B
 
 # Defining the reaction rates for each rule as callbacks within an if statement
 def reactionRate(r):
@@ -57,3 +57,4 @@ sim = stoch.Simulator(
 trace = sim.simulate(time=1000)
 
 trace.print()
+
