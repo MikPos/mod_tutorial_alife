@@ -2,15 +2,18 @@
 import mod.stochsim as stoch
 
 # Include all necessary rules
-## Recommend listing rules using 0 indexing (Python), as the 
-rule0 = ruleGML()
+# Recommend listing rules using full names to make debugging easier
+KetoEnol_F = ruleGML()
+KetoEnol_B = ruleGML()
+KetoEnol_F = ruleGML()
+KetoEnol_B = ruleGML()
 
 
 # Include all necessary molecules
 Molecules = include()
 
 # Define input/starting reactants
-Reactants = []
+Reactants = [Formose, Glycolaldehyde]
 
 # List kinetic parameters as variables for each rule, these can be changed to your liking to edit the behaviour of the system.
 k_r0 = 1.0  # Placeholder
@@ -40,8 +43,8 @@ def reactionRate(r):
 
 # Stochastic Simulation
 # Defining the initial state of the system and the simulation
-seed = None
-initialState = {}
+seed = None # This uses a random start seed for the Gillespie algorithm; if we defined a specific seed, all results would share the same trajectories
+initialState = {Formose: 1000, Glycolaldehyde: 500} # Initial molecule counts
 sim = stoch.Simulator(
     labelSettings = LabelSettings(LabelType.Term, LabelRelation.Specialisation),
     graphDatabase = inputGraphs,
@@ -52,4 +55,5 @@ sim = stoch.Simulator(
 
 # Simulate and draw the traces of each species, defining time in seconds
 trace = sim.simulate(time=1000)
+
 trace.print()
