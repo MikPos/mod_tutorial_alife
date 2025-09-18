@@ -293,7 +293,7 @@ if True:
 
 
 
-if False:
+if True:
    aldolAdd_F = ruleGMLString(aldolAddGML)
    aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
    ketoEnol_F = ruleGMLString(ketoEnolGML)
@@ -384,4 +384,119 @@ if True:
    del reaction_network
 
    dg.print()
+
+
+
+
+
+
+
+
+
+
+#Additional material
+
+
+#We built a DG like earlier and dump it
+if True:
+   aldolAdd_F = ruleGMLString(aldolAddGML)
+   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = ruleGMLString(ketoEnolGML)
+   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+
+   #First we define our input molecules
+   formaldehyde = smiles("C=O", name="Formaldehyde")
+
+   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+
+   input_molecules = [formaldehyde, glycolaldehyde]
+
+   #We might want to constrain some property of the molecules we consume.
+   #Here we only allow reactions where the reactants together have at most 4 oxygen atoms
+
+   dg = DG(graphDatabase=input_molecules)
+   reaction_network = dg.build()
+
+   strategy = (
+
+      addSubset(input_molecules) 
+
+      >> repeat[3](inputRules)
+
+   )
+
+   reaction_network.execute(strategy)
+
+   del reaction_network
+
+   dg.dump("example_dg")
+
+
+#Here we load the DG we built earlier and examine what attributes the vertices have
+if False:
+   #alternative way of loading DG
+   dg = DG()
+   b = dg.build()
+   b.load([],"example_dg")
+
+   for vertex in dg.vertices:
+      print(dir(vertex))
+      break #we break because we only want to examine one vertex
+
+
+
+#Here we load the DG we built earlier and examine what attributes the hyper edges have
+if False:
+   #alternative way of loading DG
+   dg = DG()
+   b = dg.build()
+   b.load([],"example_dg")
+
+   for edge in dg.edges:
+      print(dir(edge))
+      break #we break because we only want to examine one edge
+   
+
+
+
+
+#Here we load the DG we built earlier and examine what attributes the graph objects have
+if True:
+   #alternative way of loading DG
+   dg = DG()
+   b = dg.build()
+   b.load([],"example_dg")
+
+   #we select a random molecule from our DG
+   vertex = random.sample(list(dg.vertices), 1)[0]
+
+   print(dir(vertex.graph))
+
+   print("\n\n\n")
+
+   print("Examples of vertex.graph attributes:")
+   print("\n")
+
+   print(f"smiles: {vertex.graph.smiles}")
+   print(f"smilesWithIds: {vertex.graph.smilesWithIds}")
+   print("GML format:")
+   print(vertex.graph.getGMLString())
+   print(f"number of bonds: {vertex.graph.numEdges}")
+   print(f"number of atoms: {vertex.graph.numVertices}")
+   numCarbons = vertex.graph.vLabelCount("C")
+   print(f"number of carbon atoms: {numCarbons}")
+
+
+
+
+   print("\n\n\n")
+
+   print("Examples of vertex.graph.vertices attributes:")
+   print("\n")
+
+   #we select a random atom from our molecule
+   randomAtom = random.sample(list(vertex.graph.vertices), 1)[0]
+   
+   print(dir(randomAtom))
+
 
