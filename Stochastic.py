@@ -9,10 +9,11 @@ ketoEnol_F = ruleGMLString(ketoEnolGML)
 ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
 
 # Include all necessary molecules
-Molecules = include()
+Formaldehyde = smiles("C=O", name="Formaldehyde")
+Glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
 
 # Define input/starting reactants
-Reactants = [Formose, Glycolaldehyde]
+Reactants = [Formaldehyde, Glycolaldehyde]
 
 # List kinetic parameters as variables for each rule, these can be changed to your liking to edit the behaviour of the system.
 k_aldol_F
@@ -30,7 +31,7 @@ def reactionRate(r):
             return r, False     # False refers to binning the value
         else:
             return 0, False     # Without the presence of the reactant the rate is of course 0
-    # Alternatively we can define a specific rate equation that relies on the concentration of other species (e.g. a MM equation with inhibition)
+    # Alternatively, we can define a specific rate equation that relies on the concentration of other species (e.g. a MM equation with inhibition)
     # Rate of rule 1
     if rule1 in r.rules:
         if sim._marking[] >= 0:
@@ -44,7 +45,7 @@ def reactionRate(r):
 # Stochastic Simulation
 # Defining the initial state of the system and the simulation
 seed = None # This uses a random start seed for the Gillespie algorithm; if we defined a specific seed, all results would share the same trajectories
-initialState = {Formose: 1000, Glycolaldehyde: 500} # Initial molecule counts
+initialState = {Formaldehyde: 1000, Glycolaldehyde: 500} # Initial molecule counts
 sim = stoch.Simulator(
     labelSettings = LabelSettings(LabelType.Term, LabelRelation.Specialisation),
     graphDatabase = inputGraphs,
@@ -57,4 +58,5 @@ sim = stoch.Simulator(
 trace = sim.simulate(time=1000)
 
 trace.print()
+
 
