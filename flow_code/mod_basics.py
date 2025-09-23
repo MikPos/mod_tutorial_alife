@@ -1,12 +1,12 @@
 
 if False:
    #creating a molecule from a SMILES string
-   glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromSMILES( "OCC=O", name="Glycolaldehyde")
    glycolaldehyde.print()
 
 if False:
    #Creating a molecule from graphDFS
-   glycolaldehyde = graphDFS("[O]([C]([C](=[O])[H])([H])[H])[H]", name="Glycolaldehyde")
+   glycolaldehyde = Graph.fromDFS("[O]([C]([C](=[O])[H])([H])[H])[H]", name="Glycolaldehyde")
    glycolaldehyde.print()
 
 if False:
@@ -111,7 +111,7 @@ aldolAddGML = """rule [
 
 if False:
    #Load the rule for keto-enol isomerization (rules can also be loaded from a gml file)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
 
    #We can also print rules, similar to how we print molecules
    ketoEnol_F.print()
@@ -119,16 +119,16 @@ if False:
 
 if False:
    #We can define a rule that is the inverse of a given rule
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
    ketoEnol_B.print()
 
 
 if False:
    #Here we load all of the four rules we use for formose chemistry and put all four rules in a list
-   aldolAdd_F = ruleGMLString(aldolAddGML)
-   aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
-   ketoEnol_F = ruleGMLString(ketoEnolGML)
-   ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
+   aldolAdd_F = Rule.fromGMLString(aldolAddGML)
+   aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+   ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+   ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
    formose_rules = [ketoEnol_F, ketoEnol_B, aldolAdd_F, aldolAdd_B]
 
