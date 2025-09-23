@@ -40,9 +40,6 @@ ketoEnolGML = """rule [
 
 ]"""
 
-ketoEnol_F = ruleGMLString(ketoEnolGML)
-
-ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True)
 
 aldolAddGML = """rule [
 
@@ -95,4 +92,10 @@ aldolAddGML = """rule [
 
 aldolAdd_F = ruleGMLString(aldolAddGML)
 
-aldolAdd_B = ruleGMLString(aldolAddGML, invert=True)
+aldolAdd_B = ruleGMLString(aldolAddGML, invert=True, name="Aldol Addition reverse")
+
+ketoEnol_F = ruleGMLString(ketoEnolGML)
+
+ketoEnol_B = ruleGMLString(ketoEnolGML, invert=True, name="Keto-enol isomerization reverse")
+
+reaction_rules = [ketoEnol_F, ketoEnol_B, aldolAdd_F, aldolAdd_B]
