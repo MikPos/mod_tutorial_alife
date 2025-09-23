@@ -279,7 +279,7 @@ if True:
    pattern.print()
 
 
-   ls = LabelSettings(LabelType.Term, LabelRelation.Unification)
+   ls = LabelSettings(LabelType.Term, LabelRelation.Specialisation)
    dg = DG(graphDatabase=input_molecules, labelSettings=ls)
    reaction_network = dg.build()
 
