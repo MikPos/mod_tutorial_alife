@@ -1,12 +1,12 @@
 
 # define input molecules:
-formaldehyde = smiles("C=O", name="Formaldehyde")
-glycolaldehyde = smiles( "OCC=O", name="Glycolaldehyde")
+formaldehyde = Graph.fromSMILES("C=O", name="Formaldehyde")
+glycolaldehyde = Graph.fromSMILES( "OCC=O", name="Glycolaldehyde")
 
 
 # import rules from GML files:
-ketoEnol_F = ruleGML("rules/keto_enol_univ.gml")
-ketoEnol_B = ruleGML("rules/keto_enol_univ.gml", invert=True)
-aldolAdd_F = ruleGML("rules/aldol_add_univ.gml")
-aldolAdd_B = ruleGML("rules/aldol_add_univ.gml", invert=True)
+ketoEnol_F = Rule.fromGMLFile("rules/keto_enol_univ.gml")
+ketoEnol_B = Rule.fromGMLFile("rules/keto_enol_univ.gml", invert=True)
+aldolAdd_F = Rule.fromGMLFile("rules/aldol_add_univ.gml")
+aldolAdd_B = Rule.fromGMLFile("rules/aldol_add_univ.gml", invert=True)
 
