@@ -56,7 +56,4 @@ sim = stoch.Simulator(
 
 # Simulate and draw the traces of each species, defining time in seconds
 trace = sim.simulate(time=1000)
-
 trace.print()
-
-

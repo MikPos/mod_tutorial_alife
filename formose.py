@@ -40,9 +40,6 @@ ketoEnolGML = """rule [
 
 ]"""
 
-ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
-
-ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True)
 
 aldolAddGML = """rule [
 
@@ -93,6 +90,12 @@ aldolAddGML = """rule [
 
 ]"""
 
+ketoEnol_F = Rule.fromGMLString(ketoEnolGML)
+
+ketoEnol_B = Rule.fromGMLString(ketoEnolGML, invert=True, name="Keto-enol isomerization reverse")
+
 aldolAdd_F = Rule.fromGMLString(aldolAddGML)
 
-aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True)
+aldolAdd_B = Rule.fromGMLString(aldolAddGML, invert=True, name="Aldol Addition reverse")
+
+reaction_rules = [ketoEnol_F, ketoEnol_B, aldolAdd_F, aldolAdd_B]
