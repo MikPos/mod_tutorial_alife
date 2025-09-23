@@ -1,8 +1,4 @@
 import sys
-# Get path to mod installation
-path_to_mod = "/home/talax/xtof/local/Mod/bin/mod"
-# Add mod /lib folder to sys to import packages from there
-sys.path.insert(0, path_to_mod + "/lib64")
 include("formose.py")
 include("callbacks.py")
 include("constraints.py")
