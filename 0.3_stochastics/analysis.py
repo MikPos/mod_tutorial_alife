@@ -1,24 +1,37 @@
+# =============================================================================
+# STANDARD LIBRARY IMPORTS
+# =============================================================================
+
+import bisect
 import collections
-from typing import Dict, List, Tuple, Any, Optional
-from dataclasses import dataclass, field
-from mod import causality
+import copy
+import os
+import pickle
 import re
 import time as t
-import bisect
-import copy
-import numpy as np
-from scipy import stats
-from scipy.spatial.distance import cosine
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from scipy.spatial.distance import squareform
-from sklearn.preprocessing import normalize
-import pickle
-import os
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+# =============================================================================
+# THIRD-PARTY IMPORTS
+# =============================================================================
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-from collections import defaultdict
+from scipy import stats
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
+from scipy.spatial.distance import cosine, squareform
+from sklearn.preprocessing import normalize
+
+# =============================================================================
+# MOD IMPORTS
+# =============================================================================
+
+from mod import causality
 
 
 @dataclass
