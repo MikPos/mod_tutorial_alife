@@ -17,10 +17,6 @@ Key features:
 """
 
 import sys
-# Get path to mod installation
-path_to_mod = "/home/talax/xtof/local/Mod/bin/mod"
-# Add mod /lib folder to sys to import packages from there
-sys.path.insert(0, path_to_mod + "/lib64")
 
 # Include necessary modules for the simulation
 include("formose.py")      # Contains reaction rules and initial molecules
