@@ -24,15 +24,15 @@ include("constraints.py")  # Contains constraint functions to limit reaction net
 include("analysis.py")     # Contains analysis functions for processing results
 
 # Import mod packages
-import mod.stochsim as stoch
+from mod.causality import Simulator
 
 # =============================================================================
 # SIMULATION PARAMETERS
 # =============================================================================
 
 # Initial concentrations for starting molecules
-FORMALDEHYDE_INIT = 100    # Initial concentration of formaldehyde
-GLYCOLALDEHYDE_INIT = 1000 # Initial concentration of glycolaldehyde
+FORMALDEHYDE_INIT = 100    # Initial counts of formaldehyde
+GLYCOLALDEHYDE_INIT = 1000 # Initial counts of glycolaldehyde
 
 # Reaction rate constants
 # These determine how fast each reaction occurs in the simulation
@@ -55,37 +55,33 @@ def reaction_rate(hyperedge):
     
     This function is called by the stochastic simulator to determine the rate
     of each reaction. It extracts the rate constant from the rates dictionary
-    based on the rule name.
+    based on the rule objects.
     
     Args:
         hyperedge: The hyperedge representing the reaction
         
     Returns:
-        tuple: (rate_constant, is_reversible) where rate_constant is the rate
-               and is_reversible indicates if the reaction can go backwards
+        tuple: (rate_constant, should_be_cached) where rate_constant is the rate
+               and should_be_cached indicates if the rate is cached
     """
-    rule_rates = [rates[rule.name] for rule in hyperedge.rules]
+    rule_rates = [rates[rule] for rule in hyperedge.rules]
     return rule_rates[0], False
-
-# Label settings required for constraint checking
-# This tells MØD how to match and compare molecular graphs
-ls = LabelSettings(LabelType.Term, LabelRelation.Specialisation)
 
 # Dictionary mapping reaction names to their rate constants
 rates = {
-    "Aldol Addition": ALDOL_ADDITION_RATE,
-    "Aldol Addition reverse": ALDOL_ADDITION_REVERSE_RATE,
-    "Keto-enol isomerization": KETO_ENOL_RATE,  
-    "Keto-enol isomerization reverse": KETO_ENOL_REVERSE_RATE, 
+    ALDOL_ADD_F: ALDOL_ADDITION_RATE,
+    ALDOL_ADD_B: ALDOL_ADDITION_REVERSE_RATE,
+    KETO_ENOL_F: KETO_ENOL_RATE,  
+    KETO_ENOL_B: KETO_ENOL_REVERSE_RATE, 
 }
 
 # Initial state of the simulation
-# This defines the starting concentrations of each molecule
+# This defines the starting counts of each molecule
 init_state = {glycolaldehyde: GLYCOLALDEHYDE_INIT, formaldehyde: FORMALDEHYDE_INIT}
     
 # Expansion strategy that applies constraints during network growth
 # This ensures that only chemically reasonable molecules are generated
-expansion_strategy = (rightPredicate [lambda d: all_constraints_apply(CONSTRAINT_FUNCTIONS, d)] ( reaction_rules ))
+expansion_strategy = rightPredicate [lambda d: all_constraints_apply(CONSTRAINT_FUNCTIONS, d)] ( reaction_rules )
 
 # =============================================================================
 # SIMULATION EXECUTION
@@ -100,14 +96,13 @@ simulations = []
 # a different stochastic trajectory
 for index in range(NUMBER_OF_SIMULATIONS):
     print(f"Starting simulation {index+1}/{NUMBER_OF_SIMULATIONS}")
-    
+   
     # Create a new simulator for each run
-    sim = stoch.Simulator(
-        labelSettings=ls,  # Label settings for constraint checking
+    sim = Simulator(
         graphDatabase=[formaldehyde, glycolaldehyde],  # Starting molecules
-        expandNetwork=stoch.ExpandByStrategy(expansion_strategy),  # How to grow the network
-        initialState=init_state,  # Initial concentrations
-        draw=stoch.DrawMassAction(reactionRate=reaction_rate)  # Kinetics model
+        expandNetwork=Simulator.ExpandByStrategy(expansion_strategy),  # How to grow the network
+        initialState=init_state,  # Initial counts
+        draw=Simulator.DrawMassAction(reactionRate=reaction_rate)  # Kinetics model
         )
     
     # Run the simulation for the specified time
@@ -129,10 +124,6 @@ for index in range(NUMBER_OF_SIMULATIONS):
     
     # Store the extracted simulation data
     simulations.append(simulation)
-    
-    # Clean up memory to prevent accumulation
-    del sim
-    del trace
 
 # =============================================================================
 # STATISTICAL ANALYSIS

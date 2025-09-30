@@ -65,7 +65,7 @@ def forbiddenSubgraphs(derivation):
     Returns:
         bool: True if no forbidden subgraphs are found, False otherwise
     """
-    return all(subgraph.monomorphism(g, labelSettings=ls) == 0
+    return all(subgraph.monomorphism(g) == 0
                       for subgraph in FORBIDDEN_SUBGRAPHS for g in derivation.right)
 
 def has_at_most_x_vertices(derivation):

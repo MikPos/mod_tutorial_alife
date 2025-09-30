@@ -84,18 +84,18 @@ aldolAddGML = """rule [
 # the reaction to proceed in both directions (reversible reactions)
 
 # Keto-enol isomerization (forward direction)
-KETO_ENOL_F = Rule.fromGMLString(KETO_ENOL_GML)
+KETO_ENOL_F = Rule.fromGMLString(ketoEnolGML)
 
 # Keto-enol isomerization (reverse direction)
 # The invert=True parameter creates the reverse reaction
-KETO_ENOL_B = Rule.fromGMLString(KETO_ENOL_GML, invert=True, name="Keto-enol isomerization reverse")
+KETO_ENOL_B = Rule.fromGMLString(ketoEnolGML, invert=True, name="Keto-enol isomerization reverse")
 
 # Aldol addition (forward direction)
-ALDOL_ADD_F = Rule.fromGMLString(ALDOL_ADD_GML)
+ALDOL_ADD_F = Rule.fromGMLString(aldolAddGML)
 
 # Aldol addition (reverse direction)
 # The invert=True parameter creates the reverse reaction
-ALDOL_ADD_B = Rule.fromGMLString(ALDOL_ADD_GML, invert=True, name="Aldol Addition reverse")
+ALDOL_ADD_B = Rule.fromGMLString(aldolAddGML, invert=True, name="Aldol Addition reverse")
 
 # =============================================================================
 # REACTION RULES CONFIGURATION
