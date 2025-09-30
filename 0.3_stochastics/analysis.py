@@ -1,24 +1,37 @@
+# =============================================================================
+# STANDARD LIBRARY IMPORTS
+# =============================================================================
+
+import bisect
 import collections
-from typing import Dict, List, Tuple, Any, Optional
-from dataclasses import dataclass, field
-from mod import causality
+import copy
+import os
+import pickle
 import re
 import time as t
-import bisect
-import copy
-import numpy as np
-from scipy import stats
-from scipy.spatial.distance import cosine
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from scipy.spatial.distance import squareform
-from sklearn.preprocessing import normalize
-import pickle
-import os
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+# =============================================================================
+# THIRD-PARTY IMPORTS
+# =============================================================================
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-from collections import defaultdict
+from scipy import stats
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
+from scipy.spatial.distance import cosine, squareform
+from sklearn.preprocessing import normalize
+
+# =============================================================================
+# MOD IMPORTS
+# =============================================================================
+
+from mod import causality
 
 
 @dataclass
@@ -385,6 +398,46 @@ class SimulationCache:
     def get_reaction_types(self):
         """Get the dictionary of reaction types and their occurrences."""
         return self.reaction_types
+    
+    def save(self, filepath: str):
+        """
+        Save this SimulationCache instance to a pickle file.
+        
+        Args:
+            filepath: Path where to save the cache
+            
+        Examples:
+            >>> cache = SimulationCache()
+            >>> cache.times = [0.0, 1.0, 2.0]
+            >>> cache.save('my_cache.pkl')
+            >>> loaded_cache = SimulationCache.load('my_cache.pkl')
+            >>> loaded_cache.times == cache.times
+            True
+        """
+        # Ensure directory exists
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(filepath, 'wb') as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
+    @classmethod
+    def load(cls, filepath: str) -> 'SimulationCache':
+        """
+        Load a SimulationCache instance from a pickle file.
+        
+        Args:
+            filepath: Path to the saved cache file
+            
+        Returns:
+            SimulationCache: The loaded cache instance
+            
+        Examples:
+            >>> cache = SimulationCache.load('my_cache.pkl')
+            >>> isinstance(cache, SimulationCache)
+            True
+        """
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
 
 
 class SimulationStatistics:
@@ -649,8 +702,64 @@ class SimulationStatistics:
             'individual_summaries': summaries
         }
     
+    def get_top_species_by_average_count(self, 
+                                       top_n: int,
+                                       interval: float = 1.0,
+                                       start_time: Optional[float] = None,
+                                       end_time: Optional[float] = None) -> List[str]:
+        """
+        Get the top N species ranked by their average counts over the specified time frame.
+        
+        This method calculates the mean concentration for each species across all simulations
+        and time points, then returns the top N species sorted by this average.
+        
+        Args:
+            top_n: Number of top species to return
+            interval: Time interval between data points (default 1.0)
+            start_time: Starting time for analysis (defaults to earliest across all caches)
+            end_time: Ending time for analysis (defaults to latest across all caches)
+            
+        Returns:
+            List of species names sorted by average count (highest first)
+            
+        Examples:
+            >>> stats = SimulationStatistics([cache1, cache2, cache3])
+            >>> top_species = stats.get_top_species_by_average_count(top_n=10)
+            >>> len(top_species)
+            10
+            >>> isinstance(top_species[0], str)
+            True
+        """
+        # Get time-stepped statistics
+        stats_data = self.get_time_stepped_statistics(
+            interval=interval,
+            start_time=start_time,
+            end_time=end_time
+        )
+        
+        species_stats = stats_data['species_stats']
+        
+        if not species_stats:
+            return []
+        
+        # Calculate average count for each species across all time points
+        species_averages = {}
+        for species, time_stats in species_stats.items():
+            # Get mean values across all time points
+            means = [point.mean for point in time_stats]
+            # Calculate overall average across time
+            average_count = np.mean(means) if means else 0.0
+            species_averages[species] = average_count
+        
+        # Sort species by average count (descending) and return top N
+        sorted_species = sorted(species_averages.items(), key=lambda x: x[1], reverse=True)
+        top_species = [species for species, _ in sorted_species[:top_n]]
+        
+        return top_species
+    
     def plot_concentration_profiles(self, 
                                    plot_species: Optional[List[str]] = None,
+                                   top_n_species: Optional[int] = None,
                                    output_path: Optional[str] = None,
                                    interval: float = 1.0,
                                    start_time: Optional[float] = None,
@@ -669,6 +778,9 @@ class SimulationStatistics:
         
         Args:
             plot_species: List of species names to plot. If None, all species will be plotted.
+            top_n_species: Number of top species to plot based on average counts over time frame.
+                          If provided, this overrides plot_species. Species are ranked by their
+                          average concentration across all time points and simulations.
             output_path: Path to save the plot (should include file extension). If None, the plot will be saved to the current working directory.
             interval: Time interval between data points (default 1.0)
             start_time: Starting time for analysis (defaults to earliest across all caches)
@@ -688,14 +800,14 @@ class SimulationStatistics:
             >>> # Create simulation statistics from caches
             >>> stats = SimulationStatistics([cache1, cache2, cache3])
             >>> 
-            >>> # Plot with standard deviation uncertainty
+            >>> # Plot top 10 species by average count
             >>> stats.plot_concentration_profiles(
-            ...     plot_species=['Glycolaldehyde', 'Glyoxylate'],
+            ...     top_n_species=10,
             ...     output_path='concentration_profiles.png',
             ...     uncertainty_type='std'
             ... )
             >>> 
-            >>> # Plot with confidence intervals
+            >>> # Plot specific species
             >>> stats.plot_concentration_profiles(
             ...     plot_species=['Glycolaldehyde', 'Glyoxylate'],
             ...     output_path='concentration_profiles_ci.png',
@@ -727,9 +839,20 @@ class SimulationStatistics:
         times = np.array(stats_data['times'])
         species_stats = stats_data['species_stats']
         
-        # Filter to only include requested species that exist in the data
-        if plot_species is None:
+        # Determine which species to plot
+        if top_n_species is not None:
+            # Get top N species by average count
+            plot_species = self.get_top_species_by_average_count(
+                top_n=top_n_species,
+                interval=interval,
+                start_time=start_time,
+                end_time=end_time
+            )
+            print(f"Selected top {len(plot_species)} species by average count")
+        elif plot_species is None:
             plot_species = list(species_stats.keys())
+        
+        # Filter to only include requested species that exist in the data
         available_species = [s for s in plot_species if s in species_stats]
         if not available_species:
             raise ValueError(f"None of the requested species {plot_species} found in simulation data")
@@ -969,6 +1092,7 @@ class SimulationStatistics:
                                  clusters: Optional[Dict[str, int]] = None,
                                  output_path: Optional[str] = None,
                                  top_n: int = 50,
+                                 top_n_species: Optional[int] = None,
                                  interval: float = 1.0,
                                  start_time: Optional[float] = None,
                                  end_time: Optional[float] = None,
@@ -980,7 +1104,10 @@ class SimulationStatistics:
         Args:
             clusters: Dictionary mapping species names to cluster IDs (optional)
             output_path: Path to save the heatmap (optional)
-            top_n: Number of most abundant species to include (default 50)
+            top_n: Number of most abundant species to include based on maximum abundance (default 50)
+            top_n_species: Number of top species to include based on average counts over time frame.
+                          If provided, this overrides top_n. Species are ranked by their
+                          average concentration across all time points and simulations.
             interval: Time interval between data points (default 1.0)
             start_time: Starting time for analysis (defaults to earliest across all caches)
             end_time: Ending time for analysis (defaults to latest across all caches)
@@ -989,6 +1116,9 @@ class SimulationStatistics:
         Examples:
             >>> stats = SimulationStatistics([cache1, cache2, cache3])
             >>> clusters = stats.cluster_species_by_similarity(n_clusters=4)
+            >>> # Use top 20 species by average count
+            >>> stats.plot_species_time_heatmap(clusters=clusters, top_n_species=20)
+            >>> # Use top 20 species by maximum abundance (legacy behavior)
             >>> stats.plot_species_time_heatmap(clusters=clusters, top_n=20)
         """
         # Get time-stepped statistics
@@ -1010,19 +1140,30 @@ class SimulationStatistics:
         if self.caches:
             smiles_dict = self.caches[0].smiles
         
-        # Calculate maximum mean abundance for each species
-        max_mean_abundance = {}
-        for species, stats_list in species_stats.items():
-            max_mean_abundance[species] = max([point.mean for point in stats_list])
-        
-        # Filter out species with zero abundance and sort by maximum mean abundance
-        non_zero_species = [s for s in species_stats.keys() if max_mean_abundance[s] > 0]
-        top_species = sorted(non_zero_species, 
-                           key=lambda s: max_mean_abundance[s], reverse=True)[:top_n]
-        
-        if len(non_zero_species) < len(species_stats):
-            zero_species = set(species_stats.keys()) - set(non_zero_species)
-            print(f"Note: Excluding {len(zero_species)} species with zero concentrations from heatmap")
+        # Determine which species to include in the heatmap
+        if top_n_species is not None:
+            # Get top N species by average count
+            top_species = self.get_top_species_by_average_count(
+                top_n=top_n_species,
+                interval=interval,
+                start_time=start_time,
+                end_time=end_time
+            )
+            print(f"Selected top {len(top_species)} species by average count for heatmap")
+        else:
+            # Use legacy behavior: sort by maximum abundance
+            max_mean_abundance = {}
+            for species, stats_list in species_stats.items():
+                max_mean_abundance[species] = max([point.mean for point in stats_list])
+            
+            # Filter out species with zero abundance and sort by maximum mean abundance
+            non_zero_species = [s for s in species_stats.keys() if max_mean_abundance[s] > 0]
+            top_species = sorted(non_zero_species, 
+                               key=lambda s: max_mean_abundance[s], reverse=True)[:top_n]
+            
+            if len(non_zero_species) < len(species_stats):
+                zero_species = set(species_stats.keys()) - set(non_zero_species)
+                print(f"Note: Excluding {len(zero_species)} species with zero concentrations from heatmap")
         
         print(f"Creating heatmap with top {len(top_species)} most abundant species")
         
@@ -1121,6 +1262,7 @@ class SimulationStatistics:
     def statistical_analysis(self, 
                               output_dir: str,
                               plot_species: Optional[List[str]] = None,
+                              top_n_species: Optional[int] = None,
                               n_clusters: int = 3,
                               top_n_heatmap: int = 50,
                               interval: float = 1.0,
@@ -1143,6 +1285,9 @@ class SimulationStatistics:
         Args:
             output_dir: Directory to save all plots and results
             plot_species: List of species to plot in concentration profiles (optional)
+            top_n_species: Number of top species to plot based on average counts over time frame.
+                          If provided, this overrides plot_species. Species are ranked by their
+                          average concentration across all time points and simulations.
             n_clusters: Number of clusters for species clustering (default 3)
             top_n_heatmap: Number of top species for heatmap (default 50)
             interval: Time interval between data points (default 1.0)
@@ -1158,7 +1303,14 @@ class SimulationStatistics:
             
         Examples:
             >>> stats = SimulationStatistics([cache1, cache2, cache3])
-            >>> results = stats.comprehensive_analysis(
+            >>> # Use top 10 species by average count
+            >>> results = stats.statistical_analysis(
+            ...     output_dir='analysis_results',
+            ...     top_n_species=10,
+            ...     n_clusters=4
+            ... )
+            >>> # Use specific species
+            >>> results = stats.statistical_analysis(
             ...     output_dir='analysis_results',
             ...     plot_species=['Glycolaldehyde', 'Glyoxylate'],
             ...     n_clusters=4
@@ -1200,6 +1352,7 @@ class SimulationStatistics:
                 clusters=clusters,
                 output_path=os.path.join(output_dir, 'species_time_heatmap.png'),
                 top_n=top_n_heatmap,
+                top_n_species=top_n_species,
                 interval=interval,
                 start_time=start_time,
                 end_time=end_time
@@ -1209,6 +1362,7 @@ class SimulationStatistics:
             print("\n4. Plotting concentration profiles...")
             self.plot_concentration_profiles(
                 plot_species=plot_species,
+                top_n_species=top_n_species,
                 output_path=os.path.join(output_dir, 'concentration_profiles.png'),
                 interval=interval,
                 start_time=start_time,
@@ -1271,143 +1425,56 @@ class SimulationStatistics:
 
 
 
-
-def clear_cache():
+def extract_simulation(trace, dg, params=None, verbose=False):
     """
-    Clear the global simulation cache.
+    Extract simulation data from a completed trace and dependency graph into a SimulationCache.
     
-    Should be called before starting a new simulation if reusing the same process.
-    This function is provided for backward compatibility.
-    
-    Examples:
-        >>> from callbacks import clear_cache, simulation_cache
-        >>> simulation_cache.times.append(1.0)
-        >>> len(simulation_cache.times)
-        1
-        >>> clear_cache()
-        >>> len(simulation_cache.times)
-        0
-    """
-    global simulation_cache
-    simulation_cache.clear()
-
-
-def parse_marking(marking) -> Dict[str, int]:
-    """
-    Parse the string representation of a Marking object into a dictionary.
-    Uses direct string slicing for robustness.
+    This function processes a completed simulation trace and extracts all the information
+    that would normally be captured by the setCallbacks approach, but does so after
+    the simulation has completed by analyzing the trace.
     
     Args:
-        marking: Marking object or its string representation
-        
-    Returns:
-        Dict[str, int]: Dictionary mapping molecule names to counts
-        
-    Examples:
-        >>> parse_marking("Marking{Glycolaldehyde: 9, Glyoxylate: 99, Mol-3: 1}")
-        {'Glycolaldehyde': 9, 'Glyoxylate': 99, 'Mol-3': 1}
-    """
-    # Convert marking to string if it's not already
-    marking_str = str(marking)
-    
-    # Check if the string starts with "Marking{"
-    if not marking_str.startswith("Marking{"):
-        return {}
-    
-    # Extract the content between the braces
-    content = marking_str[8:-1]  # Remove "Marking{" and "}"
-    
-    # If the content is empty, return an empty dictionary
-    if not content:
-        return {}
-    
-    # Split the content by commas and process each key-value pair
-    result = {}
-    pairs = []
-    
-    # Handle commas inside molecule names with curly braces or other special characters
-    # Start parsing character by character
-    current_pair = ""
-    brace_level = 0
-    for char in content:
-        if char == '{':
-            brace_level += 1
-            current_pair += char
-        elif char == '}':
-            brace_level -= 1
-            current_pair += char
-        elif char == ',' and brace_level == 0:
-            # Only split on commas that are not inside braces
-            pairs.append(current_pair.strip())
-            current_pair = ""
-        else:
-            current_pair += char
-    
-    # Add the last pair if it exists
-    if current_pair:
-        pairs.append(current_pair.strip())
-    
-    # Process each key-value pair
-    for pair in pairs:
-        # Find the position of the colon
-        colon_pos = pair.find(':')
-        if colon_pos != -1:
-            key = pair[:colon_pos].strip()
-            value_str = pair[colon_pos+1:].strip()
-            try:
-                value = int(value_str)
-                result[key] = value
-            except ValueError:
-                # Skip if the value is not an integer
-                pass
-    
-    return result
-
-# Global cache instance for backward compatibility
-simulation_cache = SimulationCache()
-
-def setCallbacks(sim, params=None, verbose=False, cache=None):
-    """
-    Set up callbacks for the stochastic simulator.
-    
-    Args:
-        sim: A stochastic simulator instance from mod.stochsim
+        trace: Completed simulation trace from mod.stochsim
+        dg: Dependency graph from the simulator
         params: Optional dictionary of simulation parameters to store with the results
-        verbose: If True, print detailed output during simulation
-        cache: Optional SimulationCache instance to use (defaults to global cache)
+        verbose: If True, print detailed output during extraction
         
     Returns:
-        SimulationCache: The cache instance being used
+        SimulationCache: A cache instance filled with all simulation data
+        
+    Examples:
+        >>> trace = sim.simulate(time=100)
+        >>> cache = extract_simulation(trace, sim.dg, params={'time_limit': 100})
+        >>> len(cache.times) > 0
+        True
+        >>> isinstance(cache, SimulationCache)
+        True
     """
-    global simulation_cache 
-    if cache is None:
-        cache = simulation_cache
-    # Clear the cache
-    simulation_cache = SimulationCache()
+    # Create a new cache instance
+    cache = SimulationCache()
     
     # Store simulation parameters if provided
     if params:
         cache.parameters = params.copy()
     
-    # Capture initial state at time 0
-    initial_marking_str = str(sim._marking)
-    initial_parsed_marking = parse_marking(initial_marking_str)
+    # Get sorted vertices for consistent ordering
+    vertices = sorted(dg.vertices)
     
-    # Store SMILES for initial molecules
-    for marking in initial_parsed_marking:
-        if marking not in cache.smiles:
-            for vertex in sim._dg.vertices:
-                if str(vertex.graph)[1:-1] == marking:
-                    cache.smiles[marking] = vertex.graph.smiles
-                    break
+    # Build SMILES mapping from vertices
+    for vertex in vertices:
+        vertex_name = str(vertex.graph)[1:-1]  # Remove brackets
+        cache.smiles[vertex_name] = vertex.graph.smiles
     
-    # Create initial smiles marking
-    initial_smiles_marking = {}
-    for marking in initial_parsed_marking:
-        if marking in cache.smiles:
-            initial_smiles_marking[cache.smiles[marking]] = initial_parsed_marking[marking]
-        else:
-            initial_smiles_marking[marking] = initial_parsed_marking[marking]
+    # Process initial state
+    initial_state = trace.initialState
+    initial_marking = {}
+    
+    # Create initial marking using SMILES names
+    for vertex in vertices:
+        count = initial_state[vertex]
+        if count > 0:
+            smiles_name = vertex.graph.smiles
+            initial_marking[smiles_name] = count
     
     # Store initial state information
     initial_state_info = StateInfo(
@@ -1415,366 +1482,83 @@ def setCallbacks(sim, params=None, verbose=False, cache=None):
         iteration=0,
         time_increment=0.0,
         event_type=None,
-        marking=initial_smiles_marking
+        marking=initial_marking
     )
     
     cache.states.append(initial_state_info)
-    cache.parsed_markings.append(initial_smiles_marking)
+    cache.parsed_markings.append(initial_marking)
     cache.times.append(0.0)
     
     if verbose:
-        print("Initial marking at t=0:", initial_marking_str)
+        print("Initial marking at t=0:", initial_marking)
     
-    def onRecompute(i):
-        """
-        Called when a recomputation is performed.
-        
-        Args:
-            i: Iteration number
-        """
-        cache.recomputes.append(i)
-        if verbose:
-            print("Recompute:", i)
+    # Process each edge in the trace
+    iteration = 0
+    current_state = initial_state
     
-    def onRecomputeAvoided(i):
-        """
-        Called when a recomputation is avoided.
+    for edge in trace:
+        iteration += 1
+        time = edge.time
         
-        Args:
-            i: Iteration number
-        """
-        cache.recomputes_avoided.append(i)
-        if verbose:
-            print("RecomputeAvoided:", i)
-    
-    def onDeadlock(time, i, trace):
-        """
-        Called when a deadlock is detected.
+        # Apply the action to get the new state
+        edge.action.applyTo(current_state)
         
-        Args:
-            time: Current simulation time
-            i: Iteration number
-            trace: Simulation trace
-        """
-        cache.deadlocks.append((time, i))
-        if verbose:
-            print("Deadlock: {}, t={}".format(i, time))
-    
-    def onNewState(time, i, trace, e, tInc):
-        """
-        Called when a new state is reached.
+        # Create marking for current state using SMILES names
+        current_marking = {}
+        for vertex in vertices:
+            count = current_state[vertex]
+            if count > 0:
+                smiles_name = vertex.graph.smiles
+                current_marking[smiles_name] = count
         
-        Args:
-            time: Current simulation time
-            i: Iteration number
-            trace: Simulation trace
-            e: Event that triggered the state change
-            tInc: Time increment since last state
-            
-        Returns:
-            True to continue simulation, False to stop
-        """
-        # Cache state information
+        # Calculate time increment
+        time_increment = time - (cache.times[-1] if cache.times else 0.0)
+        
+        # Determine event type
+        event_type = str(type(edge.action).__name__) if edge.action else None
+        
+        # Create state information
         state_info = StateInfo(
             time=time,
-            iteration=i,
-            time_increment=tInc,
-            event_type=str(type(e).__name__) if e else None,
-            marking={}  # Will be filled later
+            iteration=iteration,
+            time_increment=time_increment,
+            event_type=event_type,
+            marking=current_marking
         )
+        
+        # Store state information
         cache.states.append(state_info)
-
-        # Store the marking and parse it
-        marking_str = str(sim._marking)
-        parsed_marking = parse_marking(marking_str)
-
-        for marking in parsed_marking:
-            if marking not in cache.smiles:
-                for vertex in sim._dg.vertices:
-                    if str(vertex.graph)[1:-1] == marking:
-                        cache.smiles[marking] = vertex.graph.smiles
-                        break
-
-        smiles_marking = {}
-        # Replace internal names with smiles
-        for marking in parsed_marking:
-            if marking in cache.smiles:
-                smiles_marking[cache.smiles[marking]] = parsed_marking[marking]
-            else:
-                smiles_marking[marking] = parsed_marking[marking]
-
-        cache.parsed_markings.append(smiles_marking)
+        cache.parsed_markings.append(current_marking)
         cache.times.append(time)
         
-        # Add the parsed marking to the state info
-        state_info.marking = smiles_marking
-        
-        if verbose:
-            print("Marking:", marking_str)
-        
-        # If this is an edge action (reaction), cache reaction type information
-        if e and type(e) is causality.EdgeAction:
-            for rule in e.edge.rules:
-                rule_name = str(rule)
-                cache.reaction_types[rule_name].append((time, i))
-                cache.reaction_times[rule_name].append(time)
-                
-            # Store information about the reaction
-            state_info.reaction = ReactionInfo(
-                sources=[s.graph.smiles for s in e.edge.sources],
-                targets=[t.graph.smiles for t in e.edge.targets],
-                rules=[str(r) for r in e.edge.rules]
+        # Process reaction information if this is an edge action
+        if edge.action and hasattr(edge.action, 'edge'):
+            # This is a reaction event
+            reaction_edge = edge.action.edge
+            
+            # Store reaction information
+            reaction_info = ReactionInfo(
+                sources=[s.graph.smiles for s in reaction_edge.sources],
+                targets=[t.graph.smiles for t in reaction_edge.targets],
+                rules=[str(r) for r in reaction_edge.rules]
             )
+            state_info.reaction = reaction_info
+            
+            # Track reaction types and times
+            for rule in reaction_edge.rules:
+                rule_name = str(rule)
+                cache.reaction_types[rule_name].append((time, iteration))
+                cache.reaction_times[rule_name].append(time)
         
         if verbose:
-            print("New state: {}, t={}, delta t={}".format(i, time, tInc))
-            print("  e={}".format(e))
-        
-        return True
-        
-    # Assign callbacks to simulator
-    sim.onRecompute = onRecompute
-    sim.onRecomputeAvoided = onRecomputeAvoided
-    sim.onDeadlock = onDeadlock
-    sim.onNewState = onNewState
+            print(f"State {iteration}: t={time:.3f}, delta_t={time_increment:.3f}")
+            print(f"  Event: {event_type}")
+            if state_info.reaction:
+                print(f"  Reaction: {state_info.reaction.rules}")
+            print(f"  Marking: {current_marking}")
+    
+    if verbose:
+        print(f"Extracted {len(cache.times)} states from simulation trace")
+        print(f"Found {len(cache.reaction_types)} unique reaction types")
     
     return cache
-
-
-def load_legacy_cache(filepath: str) -> SimulationCache:
-    """
-    Load a legacy pickle file (old dictionary format) and convert it to a SimulationCache instance.
-    
-    Args:
-        filepath: Path to the legacy pickle file
-        
-    Returns:
-        SimulationCache: A new cache instance with the loaded data
-        
-    Examples:
-        >>> cache = load_legacy_cache('doe_cache/mu10.0_sig1.0_l06.0_n3.0_glycol200_glyox2000_runs10_cache.pkl')
-        >>> len(cache.times) > 0
-        True
-        >>> isinstance(cache.parameters, dict)
-        True
-    """
-    with open(filepath, 'rb') as f:
-        legacy_data = pickle.load(f)
-    
-    # Create a new cache instance
-    cache = SimulationCache()
-    
-    # Copy over the data, handling any missing fields gracefully
-    cache.times = legacy_data.get('times', [])
-    cache.recomputes = legacy_data.get('recomputes', [])
-    cache.recomputes_avoided = legacy_data.get('recomputes_avoided', [])
-    cache.deadlocks = legacy_data.get('deadlocks', [])
-    cache.states = legacy_data.get('states', [])
-    cache.smiles = legacy_data.get('smiles', {})
-    cache.parsed_markings = legacy_data.get('parsed_markings', [])
-    cache.parameters = legacy_data.get('parameters', {})
-    
-    # Handle reaction types and times (these might be defaultdicts in legacy)
-    cache.reaction_types = collections.defaultdict(list)
-    if 'reaction_types' in legacy_data:
-        cache.reaction_types.update(legacy_data['reaction_types'])
-    
-    cache.reaction_times = collections.defaultdict(list)
-    if 'reaction_times' in legacy_data:
-        cache.reaction_times.update(legacy_data['reaction_times'])
-    
-    return cache
-
-
-def save_cache(cache: SimulationCache, filepath: str):
-    """
-    Save a SimulationCache instance to a pickle file.
-    
-    Args:
-        cache: SimulationCache instance to save
-        filepath: Path where to save the cache
-        
-    Examples:
-        >>> cache = SimulationCache()
-        >>> cache.times = [0.0, 1.0, 2.0]
-        >>> save_cache(cache, 'my_cache.pkl')
-        >>> loaded_cache = load_cache('my_cache.pkl')
-        >>> loaded_cache.times == cache.times
-        True
-    """
-    # Ensure directory exists
-    Path(filepath).parent.mkdir(parents=True, exist_ok=True)
-    
-    with open(filepath, 'wb') as f:
-        pickle.dump(cache, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def load_cache(filepath: str) -> SimulationCache:
-    """
-    Load a SimulationCache instance from a pickle file.
-    
-    Args:
-        filepath: Path to the saved cache file
-        
-    Returns:
-        SimulationCache: The loaded cache instance
-        
-    Examples:
-        >>> cache = load_cache('my_cache.pkl')
-        >>> isinstance(cache, SimulationCache)
-        True
-    """
-    with open(filepath, 'rb') as f:
-        return pickle.load(f)
-
-
-def save_multiple_caches(caches: List[SimulationCache], filepath: str, 
-                        metadata: Optional[Dict[str, Any]] = None):
-    """
-    Save multiple SimulationCache instances for statistical analysis.
-    
-    Args:
-        caches: List of SimulationCache instances
-        filepath: Path where to save the cache collection
-        metadata: Optional metadata about the simulation runs
-        
-    Examples:
-        >>> caches = [SimulationCache(), SimulationCache()]
-        >>> save_multiple_caches(caches, 'multi_run_study.pkl', {'description': 'Parameter sweep'})
-        >>> loaded_caches, meta = load_multiple_caches('multi_run_study.pkl')
-        >>> len(loaded_caches) == 2
-        True
-    """
-    # Ensure directory exists
-    Path(filepath).parent.mkdir(parents=True, exist_ok=True)
-    
-    data = {
-        'caches': caches,
-        'metadata': metadata or {},
-        'n_runs': len(caches),
-        'saved_at': t.time()
-    }
-    
-    with open(filepath, 'wb') as f:
-        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def load_multiple_caches(filepath: str) -> Tuple[List[SimulationCache], Dict[str, Any]]:
-    """
-    Load multiple SimulationCache instances saved together.
-    
-    Args:
-        filepath: Path to the saved cache collection
-        
-    Returns:
-        Tuple of (caches_list, metadata_dict)
-        
-    Examples:
-        >>> caches, metadata = load_multiple_caches('multi_run_study.pkl')
-        >>> isinstance(caches, list)
-        True
-        >>> isinstance(metadata, dict)
-        True
-    """
-    with open(filepath, 'rb') as f:
-        data = pickle.load(f)
-    
-    # Handle both new format and simple list format
-    if isinstance(data, dict) and 'caches' in data:
-        return data['caches'], data.get('metadata', {})
-    elif isinstance(data, list):
-        # Simple list of caches
-        return data, {}
-    else:
-        raise ValueError(f"Unexpected data format in file {filepath}")
-
-
-def load_legacy_cache_directory(directory: str, pattern: str = "*.pkl") -> List[SimulationCache]:
-    """
-    Load all legacy cache files from a directory.
-    
-    Args:
-        directory: Directory containing legacy pickle files
-        pattern: File pattern to match (default: "*.pkl")
-        
-    Returns:
-        List of SimulationCache instances loaded from the directory
-        
-    Examples:
-        >>> caches = load_legacy_cache_directory('doe_cache')
-        >>> len(caches) > 0
-        True
-        >>> all(isinstance(cache, SimulationCache) for cache in caches)
-        True
-    """
-    directory_path = Path(directory)
-    cache_files = list(directory_path.glob(pattern))
-    
-    caches = []
-    for cache_file in cache_files:
-        try:
-            cache = load_legacy_cache(str(cache_file))
-            caches.append(cache)
-            print(f"Loaded legacy cache: {cache_file.name}")
-        except Exception as e:
-            print(f"Failed to load {cache_file.name}: {e}")
-    
-    return caches
-
-
-def convert_legacy_directory(input_directory: str, output_directory: str, 
-                           pattern: str = "*.pkl"):
-    """
-    Convert all legacy cache files in a directory to the new format.
-    
-    Args:
-        input_directory: Directory containing legacy pickle files
-        output_directory: Directory to save converted files
-        pattern: File pattern to match (default: "*.pkl")
-        
-    Examples:
-        >>> convert_legacy_directory('doe_cache', 'converted_cache')
-        # Converts all .pkl files from doe_cache to new format in converted_cache
-    """
-    input_path = Path(input_directory)
-    output_path = Path(output_directory)
-    output_path.mkdir(parents=True, exist_ok=True)
-    
-    cache_files = list(input_path.glob(pattern))
-    
-    for cache_file in cache_files:
-        try:
-            # Load legacy cache
-            cache = load_legacy_cache(str(cache_file))
-            
-            # Save in new format
-            output_file = output_path / cache_file.name
-            save_cache(cache, str(output_file))
-            
-            print(f"Converted: {cache_file.name} -> {output_file}")
-        except Exception as e:
-            print(f"Failed to convert {cache_file.name}: {e}")
-
-
-def create_statistics_from_legacy_directory(directory: str, pattern: str = "*.pkl") -> SimulationStatistics:
-    """
-    Create a SimulationStatistics instance from all legacy cache files in a directory.
-    
-    Args:
-        directory: Directory containing legacy pickle files
-        pattern: File pattern to match (default: "*.pkl")
-        
-    Returns:
-        SimulationStatistics: Statistics instance ready for analysis
-        
-    Examples:
-        >>> stats = create_statistics_from_legacy_directory('doe_cache')
-        >>> isinstance(stats, SimulationStatistics)
-        True
-        >>> stats.caches  # List of loaded caches
-    """
-    caches = load_legacy_cache_directory(directory, pattern)
-    if not caches:
-        raise ValueError(f"No cache files found in directory {directory}")
-    
-    return SimulationStatistics(caches)
