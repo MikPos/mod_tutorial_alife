@@ -6,7 +6,7 @@ include("grammar_formose.py")
 # Define the filename of the DG to load.
 dg_name = "dg_ex_3"
 
-# load the dg in question from the previous dg dump file
+# Load the DG in question from the previous DG dump file.
 # inputGraphs and inputRules are parsed from the grammar file that was loaded earlier
 dg = DG.load(inputGraphs, inputRules, f"{dg_name}.dg") 
 
