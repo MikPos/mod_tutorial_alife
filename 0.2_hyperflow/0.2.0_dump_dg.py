@@ -1,4 +1,4 @@
-### create a dg and dump the files 
+### Create a DG and dump the files.
 
 include("grammar_formose.py")
 
