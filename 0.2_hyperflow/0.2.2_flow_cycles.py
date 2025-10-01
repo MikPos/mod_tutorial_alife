@@ -5,7 +5,7 @@
 include("grammar_formose.py")
 
 
-# define the name of the dg to load
+# define the filename of the DG to load
 dg_name = "dg_autocat"
 # this dg has been created before for this purpose, the script to make it is called make_autocat_dg.py
 
