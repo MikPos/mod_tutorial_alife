@@ -3,7 +3,7 @@
 # include the grammar used to create the dg (includes the molecules and the rules used to create the dg)
 include("grammar_formose.py")
 
-# define the name of the dg to load
+# Define the filename of the DG to load.
 dg_name = "dg_ex_3"
 
 # load the dg in question from the previous dg dump file
