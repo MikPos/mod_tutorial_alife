@@ -1,4 +1,4 @@
-### Loading a dg 
+### Loading a DG
 
 # include the grammar used to create the dg (includes the molecules and the rules used to create the dg)
 include("grammar_formose.py")
