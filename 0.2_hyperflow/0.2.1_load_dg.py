@@ -1,6 +1,6 @@
 ### Loading a DG
 
-# include the grammar used to create the dg (includes the molecules and the rules used to create the dg)
+# Include the grammar used to create the DG (includes the molecules and the rules used to create the DG).
 include("grammar_formose.py")
 
 # Define the filename of the DG to load.
