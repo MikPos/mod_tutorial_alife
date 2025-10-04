@@ -65,12 +65,12 @@ input_molecules = [formaldehyde, glycolaldehyde]
 #This pattern represents a path graph with 8 vertices with any vertex labels and edge labels.
 #If we constrain our search to exclude any molecule with this pattern, we will{*}
 #never produce a molecule with a chain of length 8
-pattern = graphDFS("[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]")
+pattern = Graph.fromDFS("[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]{*}[*]")
 pattern.print()
 
 #We define our DG object and the initial graphs present in the reaction network.
 #Additionally, we set the label setting to the "term" setting since we are using wild cards.
-ls = LabelSettings(LabelType.Term, LabelRelation.Unification)
+ls = LabelSettings(LabelType.Term, LabelRelation.Specialisation)
 dg = DG(graphDatabase=input_molecules, labelSettings=ls)
 
 #We make the dg active so we can modify it
