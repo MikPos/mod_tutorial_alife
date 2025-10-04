@@ -5,7 +5,7 @@
 include("grammar_formose.py")
 
 
-# define the filename of the DG to load
+# define the name of the dg to load
 dg_name = "dg_autocat"
 # this dg has been created before for this purpose, the script to make it is called make_autocat_dg.py
 
@@ -29,9 +29,7 @@ flow_name = "flow_cycle"
 
 
 ## this is the actual flow model ##
-flow = hyperflow.Model(dg, ilpSolver = "CPLEX") # specified to use the CPLEX ILP solver
-# the default solver is Gurobi, if you don't have an academic license for that use CPLEX
-
+flow = hyperflow.Model(dg) 
 
 # to find a pathway through the network, we need inflows (sources) and outflows (sinks)
 # Define the input molecules for the network
@@ -50,35 +48,13 @@ flow.addConstraint(outFlow[glycolaldehyde] == 2)
 # Disable "strange" misleading input/output flows:
 flow.allowIOReversal = False
 
-if False:
-    #### autocatalysis
-    flow.overallAutocatalysis.enable()
-
-
-if False:
-    #### forbid molecules
-    for v in dg.vertices:
-        if v.graph.vLabelCount("C") > 4:
-            flow.addConstraint(vertexFlow[v] == 0)
 
 ### Set objective function
 flow.objectiveFunction = isEdgeUsed
 
-if False:
-    #### try different objective functions
-    flow.objectiveFunction = edgeFlow
-
-if False:
-    # you can combine and formulate any linear equation as an objective function:
-    flow.objectiveFunction = isEdgeUsed * 1000 + edgeFlow 
-
-
 ##### run flow ####
 # Find a solution:
 flow.findSolutions()
-
-# # you can find more than one solution:
-# flow.findSolutions(maxNumSolutions = 5) 
 
 # Show solution information in the terminal
 flow.solutions.list()
