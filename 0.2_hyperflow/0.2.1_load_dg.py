@@ -1,7 +1,7 @@
 ### Loading a DG
 
 # Include the grammar used to create the DG (includes the molecules and the rules used to create the DG).
-include("grammar_formose.py")
+include("formose.py")
 
 # Define the filename of the DG to load.
 dg_name = "dg_ex_3"
@@ -20,3 +20,4 @@ def display_size_dg(dg):
     print(dg.numEdges)
 
 display_size_dg(dg)
+
