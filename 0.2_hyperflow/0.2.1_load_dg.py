@@ -4,7 +4,7 @@
 include("formose.py")
 
 # Define the filename of the DG to load.
-dg_name = "dg_ex_3"
+dg_name = "dg_autocat"
 
 # Load the DG in question from the previous DG dump file.
 # inputGraphs and inputRules are parsed from the grammar file that was loaded earlier
@@ -20,4 +20,5 @@ def display_size_dg(dg):
     print(dg.numEdges)
 
 display_size_dg(dg)
+
 
