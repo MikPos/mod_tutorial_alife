@@ -1,6 +1,6 @@
 ### Create a DG and dump the files.
 
-include("grammar_formose.py")
+include("formose.py")
 
 
 strat = (
@@ -21,6 +21,7 @@ strat = (
 dg = DG(graphDatabase=inputGraphs)
 dg.build().execute(strat)
 dg.print()
+
 
 
 dg.dump("dg_autocat.dg")
