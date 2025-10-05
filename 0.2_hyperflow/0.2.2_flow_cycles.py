@@ -2,7 +2,7 @@
 ## the goal is to search for a specific path through the network
 
 # include the grammar used to create the dg 
-include("grammar_formose.py")
+include("formose.py")
 
 
 # define the name of the dg to load
@@ -64,5 +64,6 @@ flow.solutions.print()
 
 # save the flow as a file
 flow.dump(f"{dg_name}_{flow_name}.flow")
+
 
 
