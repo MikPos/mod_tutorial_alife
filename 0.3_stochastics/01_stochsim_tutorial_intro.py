@@ -21,7 +21,6 @@ import sys
 
 # Include necessary modules for the simulation
 include("formose.py")      # Contains reaction rules and initial molecules
-include("constraints.py")  # Contains constraint functions to limit reaction network
 
 # Import mod packages
 from mod.causality import Simulator
@@ -75,9 +74,8 @@ rates = {
 # This defines the starting concentrations of each molecule
 init_state = {glycolaldehyde: GLYCOLALDEHYDE_INIT, formaldehyde: FORMALDEHYDE_INIT}
     
-# Expansion strategy that applies constraints during network growth
-# This ensures that only chemically reasonable molecules are generated
-expansion_strategy = rightPredicate [lambda d: all_constraints_apply(CONSTRAINT_FUNCTIONS, d)] ( reaction_rules )
+# Define the expansion strategy, which is just the rules in this case
+expansion_strategy = reaction_rules
 
 # =============================================================================
 # SIMULATION EXECUTION
@@ -92,7 +90,7 @@ sim = Simulator(
 )
 
 # Run the simulation for 100 time units
-trace = sim.simulate(time=100)
+trace = sim.simulate(time=5)
 
 # Print the simulation trace to see what happened
 trace.print()
