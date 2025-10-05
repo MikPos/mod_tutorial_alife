@@ -1,5 +1,5 @@
 ### flow query on a loaded dg 
-include("grammar_formose.py")
+include("formose.py")
 
 dg_name = "dg_autocat"
 dg = DG.load(inputGraphs, inputRules, f"{dg_name}.dg") 
@@ -39,5 +39,6 @@ flow.findSolutions()
 flow.solutions.list()
 flow.solutions.print()
 flow.dump(f"{dg_name}_{flow_name}.flow")
+
 
 
