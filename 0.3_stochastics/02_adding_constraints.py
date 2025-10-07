@@ -21,7 +21,6 @@ import sys
 # Include necessary modules for the simulation
 include("formose.py")      # Contains reaction rules and initial molecules
 include("constraints.py")  # Contains constraint functions to limit reaction network
-include("analysis.py")     # Contains analysis functions for processing results
 
 # Import mod packages
 import mod.stochsim as stoch
@@ -94,7 +93,6 @@ for index in range(NUMBER_OF_SIMULATIONS):
     
     # Create a new simulator for each run
     sim = stoch.Simulator(
-        labelSettings=ls,  # Label settings for constraint checking
         graphDatabase=[formaldehyde, glycolaldehyde],  # Starting molecules
         expandNetwork=stoch.ExpandByStrategy(expansion_strategy),  # How to grow the network
         initialState=init_state,  # Initial counts
