@@ -22,7 +22,6 @@ simulation and preventing combinatorial explosion of the reaction network.
 # Global constraint parameters
 FORBIDDEN_SUBGRAPHS = []  # List of forbidden structural patterns
 MAX_NUMBER_OF_VERTICES = 20  # Maximum number of atoms in a molecule
-MAX_NUMBER_OF_RADICALS = 1    # Maximum number of radical centers
 
 # =============================================================================
 # FORBIDDEN SUBGRAPHS DEFINITION
